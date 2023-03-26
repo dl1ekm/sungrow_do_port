@@ -1,0 +1,178 @@
+# Ergänzungen DO Port
+      # ----------------------------
+
+       # Auswahl des DO Port Modus
+      - name: DO load mode selection raw
+        unique_id: sg_do_load_mode_selection_raw
+        slave: !secret sungrow_modbus_slave
+        address: 13001 # reg 13002
+        input_type: holding
+        count: 1
+        data_type: uint16
+        swap: word
+        scan_interval: 10
+
+      # Auswahl des Lastmodus
+      - name: DO port configuration selection raw
+        unique_id: sg_do_port_configuration_selection_raw
+        slave: !secret sungrow_modbus_slave
+        address: 33274 
+        input_type: holding
+        count: 1
+        data_type: uint16
+        swap: word
+        scan_interval: 10
+
+      # Schalter für DO Port Schalterstellung (85 = AUS, 170 = EiN)
+      - name: DO load switchmode selection raw
+        unique_id: sg_do_load_switchmode_selection_raw
+        slave: !secret sungrow_modbus_slave
+        address: 13010 
+        input_type: holding
+        count: 1
+        data_type: uint16
+        swap: word
+        scan_interval: 10
+
+      # Intelligenter Modus Startzeit Stunde 0-23
+      - name: DO load intelligent mode start hour
+        unique_id: sg_do_load_intelligent_mode_start_hour
+        slave: !secret sungrow_modbus_slave
+        address: 13011 
+        input_type: holding
+        count: 1
+        data_type: uint16
+        swap: word
+        scan_interval: 10
+
+      # Intelligenter Modus Startzeit Minute 0-59
+      - name: DO load intelligent mode start minute
+        unique_id: sg_do_load_intelligent_mode_start_minute
+        slave: !secret sungrow_modbus_slave
+        address: 13012 
+        input_type: holding
+        count: 1
+        data_type: uint16
+        swap: word
+        scan_interval: 10
+
+      # Intelligenter Modus Endzeit Stunde 0-23
+      - name: DO load intelligent mode stop hour
+        unique_id: sg_do_load_intelligent_mode_stop_hour
+        slave: !secret sungrow_modbus_slave
+        address: 13013 
+        input_type: holding
+        count: 1
+        data_type: uint16
+        swap: word
+        scan_interval: 10
+
+      # Intelligenter Modus Endzeit Minute 0-59
+      - name: DO load intelligent mode stop minute
+        unique_id: sg_do_load_intelligent_mode_stop_minute
+        slave: !secret sungrow_modbus_slave
+        address: 13014 
+        input_type: holding
+        count: 1
+        data_type: uint16
+        swap: word
+        scan_interval: 10
+
+      # Intelligenter Modus Leistungsrenze 0-5000 in Watt
+      - name: DO load intelligent mode load level
+        unique_id: sg_do_load_intelligent_mode_load_level
+        slave: !secret sungrow_modbus_slave
+        address: 13015 
+        input_type: holding
+        count: 1
+        data_type: uint16
+        swap: word
+        scan_interval: 10
+
+      # Zeitgesteuerter Modus Start 1 Stunde 0 - 23
+      - name: DO load timing mode start1 hour
+        unique_id: sg_do_load_timing_mode_start1_hour
+        slave: !secret sungrow_modbus_slave
+        address: 13002
+        input_type: holding
+        count: 1
+        data_type: uint16
+        swap: word
+        scan_interval: 10
+
+      # Zeitgesteuerter Modus Start 1 Minute 0 - 59
+      - name: DO load timing mode start1 minute
+        unique_id: sg_do_load_timing_mode_start1_minute
+        slave: !secret sungrow_modbus_slave
+        address: 13003
+        input_type: holding
+        count: 1
+        data_type: uint16
+        swap: word
+        scan_interval: 10
+
+      # Zeitgesteuerter Modus Ende 1 Stunde 0 - 23
+      - name: DO load timing mode stop1 hour
+        unique_id: sg_do_load_timing_mode_stop1_hour
+        slave: !secret sungrow_modbus_slave
+        address: 13004
+        input_type: holding
+        count: 1
+        data_type: uint16
+        swap: word
+        scan_interval: 10
+      
+      # Zeitgesteuerter Modus Ende 1 Minute 0 - 59
+      - name: DO load timing mode stop1 minute
+        unique_id: sg_do_load_timing_mode_stop1_minute
+        slave: !secret sungrow_modbus_slave
+        address: 13005
+        input_type: holding
+        count: 1
+        data_type: uint16
+        swap: word
+        scan_interval: 10
+
+    # Zeitgesteuerter Modus Start 2 Stunde 0 - 23
+      - name: DO load timing mode start2 hour
+        unique_id: sg_do_load_timing_mode_start2_hour
+        slave: !secret sungrow_modbus_slave
+        address: 13006
+        input_type: holding
+        count: 1
+        data_type: uint16
+        swap: word
+        scan_interval: 10
+
+      # Zeitgesteuerter Modus Start 2 Minute 0 - 59
+      - name: DO load timing mode start2 minute
+        unique_id: sg_do_load_timing_mode_start2_minute
+        slave: !secret sungrow_modbus_slave
+        address: 13007
+        input_type: holding
+        count: 1
+        data_type: uint16
+        swap: word
+        scan_interval: 10
+
+      # Zeitgesteuerter Modus Ende 2 Stunde 0 - 23
+      - name: DO load timing mode stop2 hour
+        unique_id: sg_do_load_timing_mode_stop2_hour
+        slave: !secret sungrow_modbus_slave
+        address: 13008
+        input_type: holding
+        count: 1
+        data_type: uint16
+        swap: word
+        scan_interval: 10
+      
+      # Zeitgesteuerter Modus Ende 2 Minute 0 - 59
+      - name: DO load timing mode stop2 minute
+        unique_id: sg_do_load_timing_mode_stop2_minute
+        slave: !secret sungrow_modbus_slave
+        address: 13009
+        input_type: holding
+        count: 1
+        data_type: uint16
+        swap: word
+        scan_interval: 10

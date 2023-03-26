@@ -1,0 +1,90 @@
+title: Haus
+views:
+  - theme: Backend-selected
+    title: DO Port
+    icon: mdi:theater
+    badges: []
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: entity
+            entity: input_select.set_sg_do_port_configuration
+          - type: conditional
+            conditions:
+              - entity: input_select.set_sg_do_port_configuration
+                state: Regelmodus Last
+            card:
+              type: entity
+              entity: input_select.set_sg_do_load_mode
+          - type: conditional
+            conditions:
+              - entity: input_select.set_sg_do_port_configuration
+                state: Regelmodus Last
+              - entity: input_select.set_sg_do_load_mode
+                state: Schalterstellung
+            card:
+              type: entity
+              entity: input_select.set_sg_do_switch_mode
+          - type: conditional
+            conditions:
+              - entity: input_select.set_sg_do_port_configuration
+                state: Regelmodus Last
+              - entity: input_select.set_sg_do_load_mode
+                state: Intelligenter Modus
+            card:
+              type: entity
+              entity: input_number.do_load_intelligentmode_exportlevel_entry
+          - type: conditional
+            conditions:
+              - entity: input_select.set_sg_do_port_configuration
+                state: Regelmodus Last
+              - entity: input_select.set_sg_do_load_mode
+                state: Intelligenter Modus
+            card:
+              type: entity
+              entity: input_datetime.do_load_intelligent_mode_start
+          - type: conditional
+            conditions:
+              - entity: input_select.set_sg_do_port_configuration
+                state: Regelmodus Last
+              - entity: input_select.set_sg_do_load_mode
+                state: Intelligenter Modus
+            card:
+              type: entity
+              entity: input_datetime.do_load_intelligent_mode_stop
+          - type: conditional
+            conditions:
+              - entity: input_select.set_sg_do_port_configuration
+                state: Regelmodus Last
+              - entity: input_select.set_sg_do_load_mode
+                state: Zeitplan-Modus
+            card:
+              type: entity
+              entity: input_datetime.do_load_timing_mode_start1
+          - type: conditional
+            conditions:
+              - entity: input_select.set_sg_do_port_configuration
+                state: Regelmodus Last
+              - entity: input_select.set_sg_do_load_mode
+                state: Zeitplan-Modus
+            card:
+              type: entity
+              entity: input_datetime.do_load_timing_mode_stop1
+          - type: conditional
+            conditions:
+              - entity: input_select.set_sg_do_port_configuration
+                state: Regelmodus Last
+              - entity: input_select.set_sg_do_load_mode
+                state: Zeitplan-Modus
+            card:
+              type: entity
+              entity: input_datetime.do_load_timing_mode_start2
+          - type: conditional
+            conditions:
+              - entity: input_select.set_sg_do_port_configuration
+                state: Regelmodus Last
+              - entity: input_select.set_sg_do_load_mode
+                state: Zeitplan-Modus
+            card:
+              type: entity
+              entity: input_datetime.do_load_timing_mode_stop2

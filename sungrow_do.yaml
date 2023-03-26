@@ -1,0 +1,616 @@
+# ###########################################################
+#                                                           #
+# DO PORT Konfiguraiton für Sunggrow SHxxRT Wechselrichter  #
+#                                                           #
+#############################################################
+
+     
+
+# Templates für Drop Down Listen
+# ------------------------------
+template:
+  - sensor:
+      - name: DO load mode selection
+        unique_id: sg_do_load_mode_selection
+        state: >-
+          {% if ((states('sensor.do_load_mode_selection_raw') | int(default=0)) == 3) %}
+            Aus (Default)
+          {% elif ((states('sensor.do_load_mode_selection_raw') | int(default=0)) == 0) %}
+            Zeitplan-Modus
+          {% elif ((states('sensor.do_load_mode_selection_raw') | int(default=0)) == 1) %}
+            Schalterstellung
+          {% elif ((states('sensor.do_load_mode_selection_raw') | int(default=0)) == 2) %}
+            Intelligenter Modus
+          {% else %}
+            Unknown - should not see me!
+          {% endif %}
+      - name: DO port configuration selection
+        unique_id: sg_do_port_configuration_selection
+        state: >-
+          {% if ((states('sensor.do_port_configuration_selection_raw') | int(default=0)) == 0) %}
+            Aus (Default)
+          {% elif ((states('sensor.do_port_configuration_selection_raw') | int(default=0)) == 1) %}
+            Regelmodus Last
+          {% elif ((states('sensor.do_port_configuration_selection_raw') | int(default=0)) == 2) %}
+            Anzeige Erdungsstörung
+          {% elif ((states('sensor.do_port_configuration_selection_raw') | int(default=0)) == 3) %}
+            Systemmodus Microgrid
+          {% else %}
+            Unknown - should not see me!
+          {% endif %}
+      - name: DO load switchmode selection
+        unique_id: sg_do_load_switchmode_selection
+        state: >-
+          {% if ((states('sensor.do_load_switchmode_selection_raw') | int(default=0)) == 85) %}
+            Aus
+          {% elif ((states('sensor.do_load_switchmode_selection_raw') | int(default=0)) == 170) %}
+            Ein
+          {% else %}
+            Unknown - should not see me!
+          {% endif %}
+        
+
+# Eingabe- und Auswahlfelder
+# --------------------------
+
+input_select:
+  set_sg_do_load_mode:
+    name: DO load mode
+    options:
+      - "Aus (Default)"
+      - "Zeitplan-Modus"
+      - "Schalterstellung"
+      - "Intelligenter Modus"
+    icon: mdi:swap-vertical
+  set_sg_do_port_configuration:
+    name: DO port configuration
+    options:
+      - "Aus (Default)"
+      - "Regelmodus Last"
+      # - "Anzeige Erdungsstörung" # nicht sinnvoll
+      # - "Systemmodus Microgrid" # nicht sinnvoll
+    icon: mdi:swap-vertical
+  set_sg_do_switch_mode:
+    name: DO switch mode
+    options:
+      - "Aus"
+      - "Ein"
+    icon: mdi:swap-vertical
+
+input_number:
+  do_load_intelligentmode_exportlevel_entry:
+    name: DO load intelligent mode export level
+    min: 0
+    max: 5000
+    step: 10
+    mode: slider
+    unit_of_measurement: W
+    icon: mdi:home-export-outline
+
+input_datetime:
+  do_load_intelligent_mode_start:
+    name: DO load intelligent mode start
+    has_date: false 
+    has_time: true
+    icon: mdi:clock-time-four-outline
+  do_load_intelligent_mode_stop:
+    name: DO load intelligent mode stop
+    has_date: false 
+    has_time: true
+    icon: mdi:clock-time-four
+  do_load_timing_mode_start1:
+    name: DO load timing mode start1
+    has_date: false 
+    has_time: true
+    icon: mdi:clock-time-four-outline
+  do_load_timing_mode_stop1:
+    name: DO load timing mode stop1
+    has_date: false 
+    has_time: true
+    icon: mdi:clock-time-four
+  do_load_timing_mode_start2:
+    name: DO load timing mode start2
+    has_date: false 
+    has_time: true
+    icon: mdi:clock-time-four-outline
+  do_load_timing_mode_stop2:
+    name: DO load timing mode stop2
+    has_date: false 
+    has_time: true
+    icon: mdi:clock-time-four
+
+
+# Automatisiserungen
+# --------------------------------------------------
+# - Schreiben der Werte in den Wechselrichter
+# - Anpassen der UI bei Änderungen
+
+automation:
+
+  # DO PORT CONFIGURATION
+  # ========================
+
+  # Schreiben DO PORT in Sungrow
+  - id: "automation_sungrow_update_do_port_configuration"
+    alias: "sungrow inverter update DO port configuration"
+    description: "Updates DO port configuration"
+    trigger:
+      - platform: state
+        entity_id:
+          - input_select.set_sg_do_port_configuration
+    condition: []
+    variables:
+      do_port_configuration_off: 0
+      do_port_configuration_load_mode: 1
+      do_port_configuration_view_groundtest: 2
+      do_port_configuration_microgrid: 3
+    action:
+      - service: modbus.write_register
+        data_template:
+          hub: SungrowSHx
+          slave: !secret sungrow_modbus_slave
+          address: 33274 
+          value: >
+            {% if is_state('input_select.set_sg_do_port_configuration', 'Aus (Default)') %} {{do_port_configuration_off}}
+            {% elif is_state('input_select.set_sg_do_port_configuration', 'Regelmodus Last') %} {{do_port_configuration_load_mode}}
+            {% elif is_state('input_select.set_sg_do_port_configuration', 'Anzeige Erdungsstörung') %} {{do_port_configuration_view_groundtest}}
+            {% elif is_state('input_select.set_sg_do_port_configuration', 'Systemmodus Microgrid') %} {{do_port_configuration_microgrid}}
+            {% else %} 
+            0
+            {% endif %}
+    mode: single
+
+  # Wenn sich DO PORT geändert hat dann drop down Liste anpassen
+  - id: "automation_sungrow_update_do_port_list"
+    alias: "sungrow inverter update DO port list"
+    description: "Updates DO port configuration list"
+    trigger:
+      - platform: state
+        entity_id: 
+          - sensor.do_port_configuration_selection_raw
+    action:
+      - service: input_select.select_option
+        data_template:
+          entity_id: input_select.set_sg_do_port_configuration
+          option: >
+            {% if ((states('sensor.do_port_configuration_selection_raw') | int(default=0)) == 0) %}
+              Aus (Default)
+            {% elif ((states('sensor.do_port_configuration_selection_raw') | int(default=0)) == 1) %}
+              Regelmodus Last
+            {% elif ((states('sensor.do_port_configuration_selection_raw') | int(default=0)) == 2) %}
+              Anzeige Erdungsstörung
+            {% elif ((states('sensor.do_port_configuration_selection_raw') | int(default=0)) == 3) %}
+              Systemmodus Microgrid
+            {% else %}
+              Unknown - should not see me!
+            {% endif %}
+
+
+  # DO LOAD MODE
+  # ========================
+
+  # Schreiben DO MODE in Sungrow
+  - id: "automation_sungrow_update_do_load_mode"
+    alias: "sungrow inverter update DO load mode"
+    description: "Updates DO load mode"
+    trigger:
+      - platform: state
+        entity_id:
+          - input_select.set_sg_do_load_mode
+    condition: []
+    variables:
+      do_load_mode_timing_mode: 0
+      do_load_mode_onoff_mode: 1
+      do_load_mode_poweroptimized_mode: 2
+      do_load_mode_disable: 3
+    action:
+      - service: modbus.write_register
+        data_template:
+          hub: SungrowSHx
+          slave: !secret sungrow_modbus_slave
+          address: 13001 # reg 13002
+          value: >
+            {% if is_state('input_select.set_sg_do_load_mode', 'Aus (Default)') %} {{do_load_mode_disable}}
+            {% elif is_state('input_select.set_sg_do_load_mode', 'Zeitplan-Modus') %} {{do_load_mode_timing_mode}}
+            {% elif is_state('input_select.set_sg_do_load_mode', 'Schalterstellung') %} {{do_load_mode_onoff_mode}}
+            {% elif is_state('input_select.set_sg_do_load_mode', 'Intelligenter Modus') %} {{do_load_mode_poweroptimized_mode}}
+            {% else %} 
+            0
+            {% endif %}
+    mode: single
+
+  # Wenn sich DO MODE geändert hat dann drop down Liste anpassen
+  - id: "automation_sungrow_update_do_load_list"
+    alias: "sungrow inverter update DO load list"
+    description: "Updates DO load mode list"
+    trigger:
+      - platform: state
+        entity_id: 
+          - sensor.do_load_mode_selection_raw
+    action:
+      - service: input_select.select_option
+        data_template:
+          entity_id: input_select.set_sg_do_load_mode
+          option: >
+            {% if ((states('sensor.do_load_mode_selection_raw') | int(default=0)) == 3) %}
+              Aus (Default)
+            {% elif ((states('sensor.do_load_mode_selection_raw') | int(default=0)) == 0) %}
+              Zeitplan-Modus
+            {% elif ((states('sensor.do_load_mode_selection_raw') | int(default=0)) == 1) %}
+              Schalterstellung
+            {% elif ((states('sensor.do_load_mode_selection_raw') | int(default=0)) == 2) %}
+              Intelligenter Modus
+            {% else %}
+              Unknown - should not see me!
+            {% endif %}
+
+
+  # SWITCH  MODE
+  # ==============================
+
+  # Schreiben DO SWITCHMIDE in Sungrow
+  - id: "automation_sungrow_update_do_switchmode"
+    alias: "sungrow inverter update DO port switchmode"
+    description: "Updates DO port switchmode setting"
+    trigger:
+      - platform: state
+        entity_id:
+          - input_select.set_sg_do_switch_mode
+    condition: []
+    variables:
+      do_port_switchmode_off: 85
+      do_port_switchmode_on: 170
+    action:
+      - service: modbus.write_register
+        data_template:
+          hub: SungrowSHx
+          slave: !secret sungrow_modbus_slave
+          address: 13010 
+          value: >
+            {% if is_state('input_select.set_sg_do_switch_mode', 'Aus') %} {{do_port_switchmode_off}}
+            {% elif is_state('input_select.set_sg_do_switch_mode', 'Ein') %} {{do_port_switchmode_on}}
+            {% else %} 
+            0
+            {% endif %}
+    mode: single
+
+
+  # Wenn sich DO SWITCHMODE geändert hat dann drop down Liste anpassen
+  - id: "automation_sungrow_update_do_switchmode_list"
+    alias: "sungrow inverter update DO port switchmode list"
+    description: "Updates DO port switchmode list"
+    trigger:
+      - platform: state
+        entity_id: 
+          - sensor.do_load_switchmode_selection_raw
+    action:
+      - service: input_select.select_option
+        data_template:
+          entity_id: input_select.set_sg_do_switch_mode
+          option: >
+            {% if ((states('sensor.do_load_switchmode_selection_raw') | int(default=0)) == 85) %}
+              Aus
+            {% elif ((states('sensor.do_load_switchmode_selection_raw') | int(default=0)) == 170) %}
+              Ein
+            {% else %}
+              Unknown - should not see me!
+            {% endif %}
+
+
+  # INTELLIGENT MODE
+  # ==============================
+
+
+  # DO Port Load Intelligent Mode Export Level
+  # ------------------------------------------
+
+  # Set Sungrow from UI
+  - id: "automation_sungrow_update_do_intelligentmode_exportlevel"
+    alias: "sungrow inverter update DO port intelligentmode exportlevel"
+    description: "Updates DO port intelligent mode export level"
+    trigger:
+      - platform: state
+        entity_id:
+          - input_number.do_load_intelligentmode_exportlevel_entry
+    action:
+      - service: modbus.write_register
+        data_template:
+          hub: SungrowSHx
+          slave: !secret sungrow_modbus_slave
+          address: 13015 
+          value: "{{ states('input_number.do_load_intelligentmode_exportlevel_entry') | int }}"
+    mode: single
+
+
+  # Update UI on Sungrow change
+  - id: "automation_sungrow_do_intelligentmode_exportlevel_changed"
+    alias: "sungrow inverter DO port intelligent mode exportlevel changed"
+    description: " DO port intelligent mode export level changed"
+    trigger:
+      - platform: state
+        entity_id: 
+          - sensor.do_load_intelligent_mode_load_level
+    action:
+      - service: input_number.set_value
+        target: 
+          entity_id: input_number.do_load_intelligentmode_exportlevel_entry
+        data:
+           value: "{{ states('sensor.do_load_intelligent_mode_load_level') | int  }}"
+
+
+
+  # DO Port Load Intelligent Mode Start Time
+  # -----------------------------------------
+  
+  # Set Sungrow from UI
+  - id: "automation_sungrow_update_do_intelligentmode_starttime"
+    alias: "sungrow inverter update DO port intelligentmode starttime"
+    description: "Updates DO port intelligent mode start time"
+    trigger:
+      - platform: state
+        entity_id:
+          - input_datetime.do_load_intelligent_mode_start
+    action:
+      - service: modbus.write_register
+        data_template:
+          hub: SungrowSHx
+          slave: !secret sungrow_modbus_slave
+          address: 13011
+          value: "{{state_attr('input_datetime.do_load_intelligent_mode_start', 'hour') | int }}"
+      - service: modbus.write_register
+        data_template:
+          hub: SungrowSHx
+          slave: !secret sungrow_modbus_slave
+          address: 13012
+          value: "{{state_attr('input_datetime.do_load_intelligent_mode_start', 'minute') | int }}"
+    mode: single
+
+  # Update UI on Sungrow change
+  - id: "automation_sungrow_trigger_do_intelligentmode_starttime"
+    alias: "sungrow inverter DO port intelligent mode starttime changed"
+    description: " DO port intelligent mode start time changed"
+    trigger:
+      - platform: state
+        entity_id: 
+          - sensor.do_load_intelligent_mode_start_hour
+      - platform: state
+        entity_id: 
+          - sensor.do_load_intelligent_mode_start_minute
+    action:
+      - service: input_datetime.set_datetime
+        target: 
+          entity_id: input_datetime.do_load_intelligent_mode_start
+        data:
+          time: "{{ states('sensor.do_load_intelligent_mode_start_hour') | int }}:{{ states('sensor.do_load_intelligent_mode_start_minute') | int }}:00" 
+  
+
+  # DO Port Load Intelligent Mode Stop Time
+  # ---------------------------------------
+  
+  # Set Sungrow from UI
+  - id: "automation_sungrow_update_do_intelligentmode_stoptime"
+    alias: "sungrow inverter update DO port intelligentmode stoptime"
+    description: "Updates DO port intelligent mode stop time"
+    trigger:
+      - platform: state
+        entity_id:
+          - input_datetime.do_load_intelligent_mode_stop
+    action:
+      - service: modbus.write_register
+        data_template:
+          hub: SungrowSHx
+          slave: !secret sungrow_modbus_slave
+          address: 13013
+          value: "{{state_attr('input_datetime.do_load_intelligent_mode_stop', 'hour') | int }}"
+      - service: modbus.write_register
+        data_template:
+          hub: SungrowSHx
+          slave: !secret sungrow_modbus_slave
+          address: 13014
+          value: "{{state_attr('input_datetime.do_load_intelligent_mode_stop', 'minute') | int }}"
+    mode: single
+
+  # Update UI on Sungrow change
+  - id: "automation_sungrow_trigger_do_intelligentmode_stoptime"
+    alias: "sungrow inverter DO port intelligent mode stoptime changed"
+    description: " DO port intelligent mode stop time changed"
+    trigger:
+      - platform: state
+        entity_id: 
+          - sensor.do_load_intelligent_mode_stop_hour
+      - platform: state
+        entity_id: 
+          - sensor.do_load_intelligent_mode_stop_minute
+    action:
+      - service: input_datetime.set_datetime
+        target: 
+          entity_id: input_datetime.do_load_intelligent_mode_stop
+        data:
+          time: "{{ states('sensor.do_load_intelligent_mode_stop_hour') | int }}:{{ states('sensor.do_load_intelligent_mode_stop_minute') | int }}:00" 
+
+
+  # TIMING MODE
+  # =========================================
+  
+  # DO Port Load Timing Mode Start Time 1
+  # -------------------------------------
+
+  # Set Sungrow from UI
+  - id: "automation_sungrow_update_do_timingmode_starttime1"
+    alias: "sungrow inverter update DO port timingmode starttime1"
+    description: "Updates DO port intelligent mode start time 1"
+    trigger:
+      - platform: state
+        entity_id:
+          - input_datetime.do_load_timing_mode_start1
+    action:
+      - service: modbus.write_register
+        data_template:
+          hub: SungrowSHx
+          slave: !secret sungrow_modbus_slave
+          address: 13002
+          value: "{{state_attr('input_datetime.do_load_timing_mode_start1', 'hour') | int }}"
+      - service: modbus.write_register
+        data_template:
+          hub: SungrowSHx
+          slave: !secret sungrow_modbus_slave
+          address: 13003
+          value: "{{state_attr('input_datetime.do_load_timing_mode_start1', 'minute') | int }}"
+    mode: single
+
+  # Update UI on Sungrow change
+  # ---------------------------
+  - id: "automation_sungrow_trigger_do_intelligentmode_starttime1"
+    alias: "sungrow inverter DO port intelligent mode starttime1 changed"
+    description: " DO port intelligent mode start time 1 changed"
+    trigger:
+      - platform: state
+        entity_id: 
+          - sensor.do_load_timing_mode_start1_hour
+      - platform: state
+        entity_id: 
+          - sensor.do_load_timing_mode_start1_minute
+    action:
+      - service: input_datetime.set_datetime
+        target: 
+          entity_id: input_datetime.do_load_timing_mode_start1
+        data:
+          time: "{{ states('sensor.do_load_timing_mode_start1_hour') | int }}:{{ states('sensor.do_load_timing_mode_start1_minute') | int }}:00" 
+
+
+  # DO Port Load Timing Mode Stop Time 1
+  # -------------------------------------
+
+  # Set Sungrow from UI
+  - id: "automation_sungrow_update_do_timingmode_stoptime1"
+    alias: "sungrow inverter update DO port timingmode stoptime1"
+    description: "Updates DO port intelligent mode stop time 1"
+    trigger:
+      - platform: state
+        entity_id:
+          - input_datetime.do_load_timing_mode_stop1
+    action:
+      - service: modbus.write_register
+        data_template:
+          hub: SungrowSHx
+          slave: !secret sungrow_modbus_slave
+          address: 13004
+          value: "{{state_attr('input_datetime.do_load_timing_mode_stop1', 'hour') | int }}"
+      - service: modbus.write_register
+        data_template:
+          hub: SungrowSHx
+          slave: !secret sungrow_modbus_slave
+          address: 13005
+          value: "{{state_attr('input_datetime.do_load_timing_mode_stop1', 'minute') | int }}"
+    mode: single
+
+  # Update UI on Sungrow change
+  # ---------------------------
+  - id: "automation_sungrow_trigger_do_intelligentmode_stoptime1"
+    alias: "sungrow inverter DO port intelligent mode stoptime1 changed"
+    description: " DO port intelligent mode stop time 1 changed"
+    trigger:
+      - platform: state
+        entity_id: 
+          - sensor.do_load_timing_mode_stop1_hour
+      - platform: state
+        entity_id: 
+          - sensor.do_load_timing_mode_stop1_minute
+    action:
+      - service: input_datetime.set_datetime
+        target: 
+          entity_id: input_datetime.do_load_timing_mode_stop1
+        data:
+          time: "{{ states('sensor.do_load_timing_mode_stop1_hour') | int }}:{{ states('sensor.do_load_timing_mode_stop1_minute') | int }}:00" 
+
+
+  # DO Port Load Timing Mode Start Time 2
+  # -------------------------------------
+
+  # Set Sungrow from UI
+  - id: "automation_sungrow_update_do_timingmode_starttime2"
+    alias: "sungrow inverter update DO port timingmode starttime2"
+    description: "Updates DO port intelligent mode start time 2"
+    trigger:
+      - platform: state
+        entity_id:
+          - input_datetime.do_load_timing_mode_start2
+    action:
+      - service: modbus.write_register
+        data_template:
+          hub: SungrowSHx
+          slave: !secret sungrow_modbus_slave
+          address: 13006
+          value: "{{state_attr('input_datetime.do_load_timing_mode_start2', 'hour') | int }}"
+      - service: modbus.write_register
+        data_template:
+          hub: SungrowSHx
+          slave: !secret sungrow_modbus_slave
+          address: 13007
+          value: "{{state_attr('input_datetime.do_load_timing_mode_start2', 'minute') | int }}"
+    mode: single
+
+  # Update UI on Sungrow change
+  # ---------------------------
+  - id: "automation_sungrow_trigger_do_intelligentmode_starttime2"
+    alias: "sungrow inverter DO port intelligent mode starttime2 changed"
+    description: " DO port intelligent mode start time 2 changed"
+    trigger:
+      - platform: state
+        entity_id: 
+          - sensor.do_load_timing_mode_start2_hour
+      - platform: state
+        entity_id: 
+          - sensor.do_load_timing_mode_start2_minute
+    action:
+      - service: input_datetime.set_datetime
+        target: 
+          entity_id: input_datetime.do_load_timing_mode_start2
+        data:
+          time: "{{ states('sensor.do_load_timing_mode_start2_hour') | int }}:{{ states('sensor.do_load_timing_mode_start2_minute') | int }}:00" 
+
+
+  # DO Port Load Timing Mode Stop Time 1
+  # -------------------------------------
+
+  # Set Sungrow from UI
+  - id: "automation_sungrow_update_do_timingmode_stoptime2"
+    alias: "sungrow inverter update DO port timingmode stoptime2"
+    description: "Updates DO port intelligent mode stop time 2"
+    trigger:
+      - platform: state
+        entity_id:
+          - input_datetime.do_load_timing_mode_stop2
+    action:
+      - service: modbus.write_register
+        data_template:
+          hub: SungrowSHx
+          slave: !secret sungrow_modbus_slave
+          address: 13008
+          value: "{{state_attr('input_datetime.do_load_timing_mode_stop2', 'hour') | int }}"
+      - service: modbus.write_register
+        data_template:
+          hub: SungrowSHx
+          slave: !secret sungrow_modbus_slave
+          address: 13009
+          value: "{{state_attr('input_datetime.do_load_timing_mode_stop2', 'minute') | int }}"
+    mode: single
+
+  # Update UI on Sungrow change
+  # ---------------------------
+  - id: "automation_sungrow_trigger_do_intelligentmode_stoptime2"
+    alias: "sungrow inverter DO port intelligent mode stoptime2 changed"
+    description: " DO port intelligent mode stop time 2 changed"
+    trigger:
+      - platform: state
+        entity_id: 
+          - sensor.do_load_timing_mode_stop2_hour
+      - platform: state
+        entity_id: 
+          - sensor.do_load_timing_mode_stop2_minute
+    action:
+      - service: input_datetime.set_datetime
+        target: 
+          entity_id: input_datetime.do_load_timing_mode_stop2
+        data:
+          time: "{{ states('sensor.do_load_timing_mode_stop2_hour') | int }}:{{ states('sensor.do_load_timing_mode_stop2_minute') | int }}:00" 
