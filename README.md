@@ -5,3 +5,5 @@ Diese Dateien sind eine Erweiterung des Sungrow SHxxRT-Pakets von mkaiser
 Hier kommt die Anleitung hin
 Test
 Test22
+und noch eine Zeile
+
