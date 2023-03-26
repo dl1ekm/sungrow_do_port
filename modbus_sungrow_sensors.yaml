@@ -1,7 +1,7 @@
-# Ergänzungen DO Port
+      # Ergänzungen DO Port
       # ----------------------------
 
-       # Auswahl des DO Port Modus
+      # Auswahl des DO Port Modus
       - name: DO load mode selection raw
         unique_id: sg_do_load_mode_selection_raw
         slave: !secret sungrow_modbus_slave
